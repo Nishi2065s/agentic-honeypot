@@ -1,27 +1,28 @@
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
+from typing import Optional
 from datetime import datetime
 import re
 
 app = FastAPI(title="Agentic Honey-Pot API")
 
-
 API_KEY = "GUVI-HCL-2026"
 
-
+# Request body is OPTIONAL (important for GUVI tester)
 class RequestData(BaseModel):
-    message: str
-
+    message: Optional[str] = None
 
 @app.post("/honeypot")
 def honeypot(
-    data: RequestData,
+    data: Optional[RequestData] = None,
     x_api_key: str = Header(None)
 ):
+    # API Key validation
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
-    message = data.message.lower()
+    # Handle empty body (GUVI tester sends no JSON)
+    message = data.message.lower() if data and data.message else ""
 
     scam_words = ["free", "win", "prize", "click", "urgent"]
     indicators = [word for word in scam_words if word in message]
@@ -44,3 +45,5 @@ def honeypot(
         },
         "honeypot_action": "logged_and_monitored"
     }
+
+
